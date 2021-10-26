@@ -1,4 +1,5 @@
-acceptKey = keyboard_check_pressed(vk_space);
+// making sure setupRan allows us to avoid auto scrolling a new page of text when someone comes here from a dialog choice if the space key is still technically pressed.
+acceptKey = setupRan && keyboard_check_pressed(vk_space);
 
 textboxX = camera_get_view_x(view_camera[0]);
 textboxY = camera_get_view_y(view_camera[0]) + preferredSpaceFromTopOfCamera;
@@ -22,15 +23,77 @@ if (!setupRan) {
 
     for (var p = 0; p < totalNumberOfPages; p++) {
         textLength[p] = string_length(npcTextArrayInOrder[p]);
-
         // This roughly centers textbox on our screen screen without a character speaking.
         textXOffset[p] = 87;
+		
+		#region calculate where to insert line breaks and where to draw each character
+		// setting individual characters and finding where the lines of text should break
+		for(var c = 0; c < textLength[p]; c++){
+			var characterPosition = c + 1;
+			
+			// store individual characters in the characters array
+			characters[c][p] = string_char_at(npcTextArrayInOrder[p], characterPosition);
+			
+			// get current width of line
+			var textUpToChar = string_copy(npcTextArrayInOrder[p], 1, characterPosition);
+			var currentTextWidth = string_width(textUpToChar) - string_width(characters[c][p]);
+			
+			// get the last free space
+			var characterToLookFor = " "; // in case you don't like ending on spaces :)
+			if(characters[c][p]==" ") {
+				lastSeenSpacePosition = characterPosition + string_length(characterToLookFor);
+			}
+			
+			// get the line breaks
+			var currentTextIsGreaterThanAvailableWidth = currentTextWidth - lineBreakOffset[p] > maximumLineWidth;
+			if(currentTextIsGreaterThanAvailableWidth){
+				/*
+					Assuming our maximum line width could only hold "Hi!" of the string "Hi! I'm NPC 1.", we're essentially going to grab "Hi! I"
+					Then manipulate the string for the offset down to just "Hi! ", this prevents us from starting the next line with a space.
+					
+					Another possible improvement here is inserting line breaks into the string, then drawing the string in one go if you run into performance issues.
+					However, this system is explicitly designed to support DRAMA in your dialog presentation layer, so that's for another tutorial.
+				*/ 
+				lineBreakPosition[lineBreakNumber[p]][p] = lastSeenSpacePosition;
+				lineBreakNumber[p]++;
+				var textUpToLastSpace = string_copy(npcTextArrayInOrder[p], 1, lastSeenSpacePosition);
+				var lastFreeSpaceString = string_char_at(npcTextArrayInOrder[p], lastSeenSpacePosition);
+				lineBreakOffset[p] = string_width(textUpToLastSpace) - string_width(lastFreeSpaceString);
+			}
+		}
+		// getting each characters coordinates
+		for(var c = 0; c < textLength[p]; c++){
+			var characterPosition = c + 1;
+			var textX = textboxX + textXOffset[p] + border;
+			var textY = textboxY + border;
+			
+			// get current width of line
+			var textUpToChar = string_copy(npcTextArrayInOrder[p], 1, characterPosition);
+			var currentTextWidth = string_width(textUpToChar) - string_width(characters[c][p]);
+			
+			var textLine = 0;
+			
+			// compensate for string breaks
+			for(var lineBreak = 0; lineBreak < lineBreakNumber[p]; lineBreak++){
+				if(characterPosition >= lineBreakPosition[lineBreak][p]){
+					var strCopy = string_copy(npcTextArrayInOrder[p], lineBreakPosition[lineBreak][p], characterPosition - lineBreakPosition[lineBreak][p]);
+					currentTextWidth = string_width(strCopy);
+					textLine = lineBreak + 1;
+				}
+			}
+			// add to the x and y coordinates based on the new info
+			characterXCoords[c][p] = textX + currentTextWidth;
+			characterYCoords[c][p]= textY + textLine * lineSpacing;
+		}
+			
+		#endregion
     }
+	
     currentPage = 0;
     setupRan = true;
 }
 
-#region calculate how may characters to draw of oru current page
+#region calculate how may characters to draw of our current page
 if (numberOfCharactersToDraw < textLength[currentPage]) {
     numberOfCharactersToDraw += textSpeed;
     // prevent overflow for faster typing speeds
@@ -45,7 +108,7 @@ if (acceptKey) {
             currentPage++;
             numberOfCharactersToDraw = 0;
         } else {
-            instance_destroy();
+			instance_destroy();
             if (totalNumberOfOptions > 0) {
                 populateAndStartConversationById(optionLinkId[currentlySelectedOption]);
             }
@@ -104,8 +167,9 @@ if (totalNumberOfPages > 0) {
     #endregion
 
     #region draw the dialog on the background
-    var textToDraw = string_copy(npcTextArrayInOrder[currentPage], 1, numberOfCharactersToDraw);
-    draw_text_ext(textboxXPosition + border, textboxYPosition + border, textToDraw, lineSpacing, maximumLineWidth);
-    #endregion
+	for(var c = 0; c < numberOfCharactersToDraw; c++){
+		draw_text(characterXCoords[c][currentPage], characterYCoords[c][currentPage], characters[c][currentPage]);
+	}
+	#endregion
 }
 #endregion

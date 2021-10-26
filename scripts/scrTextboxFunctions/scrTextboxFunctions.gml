@@ -1,7 +1,16 @@
+
+function scrSetDefaultsForText(){
+	// meant to manually store where we want line breaks
+	lineBreakPosition[0][currentPage] = 999;
+	lineBreakNumber[currentPage] = 0;
+	lineBreakOffset[currentPage] = 0;
+}
+
 function populateSpeakerText(text) {
     if (is_undefined(currentPage) || is_undefined(npcTextArrayInOrder)) {
         show_debug_message("Objects attempting to have text populated should be aware of their current page, and an array in which to store the text.");
     }
+	scrSetDefaultsForText();
     npcTextArrayInOrder[currentPage] = text;
     currentPage++;
 }
@@ -24,3 +33,4 @@ function populateAndStartConversationById(textId) {
         scrGameText(textId);
     }
 }
+

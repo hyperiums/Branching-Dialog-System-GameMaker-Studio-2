@@ -29,6 +29,12 @@ numberOfCharactersToDraw = 0;
 textSpeed = 1;
 #endregion
 
+#region Dialog text by character and where to draw it
+characters[0][0] = ""; // character, page
+characterXCoords[0][0] = 0; // character, page
+characterYCoords[0][0] = 0; // character, page
+#endregion
+
 #region options
 availableOptions[0] = "";
 optionLinkId[0] = -1;
@@ -37,3 +43,8 @@ totalNumberOfOptions = 0;
 #endregion
 
 setupRan = false;
+
+#region effects
+scrSetDefaultsForText();
+lastSeenSpacePosition = 0;
+#endregion
