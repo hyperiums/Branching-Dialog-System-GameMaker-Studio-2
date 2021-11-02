@@ -226,7 +226,32 @@ if (totalNumberOfPages > 0) {
 
     #region draw the dialog on the background
 	for(var c = 0; c < numberOfCharactersToDraw; c++){
-		draw_text(characterXCoords[c][currentPage], characterYCoords[c][currentPage], characters[c][currentPage]);
+		#region implement our wave like floating effect
+		var floatY = 0;
+		if(floatText[c][currentPage]){
+			floatDirection[c][currentPage] -= 6; // between 4 and 8 is a good value.
+			floatY = dsin(floatDirection[c][currentPage]); // feel free to multiply this by a value such as 2 to make it appear more extreme
+		}
+		#endregion
+		#region implement shaking effect
+		var shakeX = 0;
+		var shakeY = 0;
+		if(shakeText[c][currentPage]){
+			shakeTimer[c][currentPage]--;
+			if(shakeTimer[c][currentPage] <= 0){
+				shakeTimer[c][currentPage] = irandom_range(4,8); // restart the count down with a bit of randomization	
+				shakeDirection[c][currentPage] = random(360);
+			}
+			if(shakeTimer[c][currentPage] <= 3){
+				shakeX = lengthdir_x(1, shakeDirection[c][currentPage]);
+				shakeY = lengthdir_y(1, shakeDirection[c][currentPage]);
+			}
+		}
+		#endregion
+		draw_text_color(
+		characterXCoords[c][currentPage] + shakeX, characterYCoords[c][currentPage] + floatY + shakeY,
+		characters[c][currentPage], 
+		fontColor1[c][currentPage], fontColor2[c][currentPage], fontColor3[c][currentPage], fontColor4[c][currentPage], 1);
 	}
 	#endregion
 }
