@@ -1,17 +1,56 @@
-
+enum speakerLocation { // doubles as a constant to flip the scale which makes it a bit more fragile. However, it does keep the code compact.
+	onTheLeft = 1,
+	onTheRight = -1,
+};
+enum characters {
+	blueKid,
+	greyKid,
+	greyKidHappy,
+	greenKid
+}
 function scrSetDefaultsForText(){
 	// meant to manually store where we want line breaks
 	lineBreakPosition[0][currentPage] = 999;
 	lineBreakNumber[currentPage] = 0;
 	lineBreakOffset[currentPage] = 0;
+	textBackgroundSprite[currentPage] = sprTextbox;
+	speakerSprite[currentPage] = noone;
+	speakerSide[currentPage] = undefined;
+	fontColor[currentPage] = c_black;
+	sound[currentPage] = -1;
 }
 
-function populateSpeakerText(text) {
+
+function populateSpeakerText(text, character = noone, side = undefined) {
     if (is_undefined(currentPage) || is_undefined(npcTextArrayInOrder)) {
         show_debug_message("Objects attempting to have text populated should be aware of their current page, and an array in which to store the text.");
     }
 	scrSetDefaultsForText();
     npcTextArrayInOrder[currentPage] = text;
+	if(character != noone && is_undefined(side)){
+		side = speakerLocation.onTheLeft;	
+	}
+	switch(character){
+		case characters.greyKid:
+			speakerSprite[currentPage] = sprPlayerSpeak;
+			textBackgroundSprite[currentPage] = sprTextboxGrey;
+			fontColor[currentPage] = c_black;
+			sound[currentPage] = slowTyping;
+			break;
+		case characters.greyKidHappy:
+			speakerSprite[currentPage] = sprPlayerSpeakHappy;
+			textBackgroundSprite[currentPage] = sprTextboxGrey;
+			fontColor[currentPage] = c_black;
+			sound[currentPage] = mediumTyping;
+			break;
+		case characters.greenKid:
+			speakerSprite[currentPage] = sprGreenKidSpeakSassy;
+			textBackgroundSprite[currentPage] = sprTextboxGreen;
+			fontColor[currentPage] = c_black;
+			sound[currentPage] = slowTyping;
+			break;
+	}
+	speakerSide[currentPage] = side;
     currentPage++;
 }
 

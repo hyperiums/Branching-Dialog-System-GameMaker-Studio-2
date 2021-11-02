@@ -14,7 +14,6 @@ if (!setupRan) {
     	Random troubleshooting: if the game font isn't rendering or compiling, delete the font asset, close gms, re-add. I have no idea what causes this, but I ran into it, so hopefully, that tip will help you as well.
     */
     draw_set_font(customFont);
-    draw_set_color(c_black);
     draw_set_valign(fa_top);
     draw_set_halign(fa_left);
 
@@ -23,8 +22,22 @@ if (!setupRan) {
 
     for (var p = 0; p < totalNumberOfPages; p++) {
         textLength[p] = string_length(npcTextArrayInOrder[p]);
-        // This roughly centers textbox on our screen screen without a character speaking.
-        textXOffset[p] = 87;
+		// all of these values were arrived at by play testing. They will be different in your implementation.
+		switch(speakerSide[p]){
+			case speakerLocation.onTheLeft:
+				textXOffset[p] = 112;
+				portraitXOffset[p] = 24;
+				break;
+			case speakerLocation.onTheRight:
+				textXOffset[p] = 24;
+				portraitXOffset[p] = 312;
+				break;
+			default:
+				// This roughly centers textbox on our screen screen without a character speaking.
+				textXOffset[p] = 72;
+				portraitXOffset[p] = -1; // not used
+				break;
+		}
 		
 		#region calculate where to insert line breaks and where to draw each character
 		// setting individual characters and finding where the lines of text should break
@@ -94,10 +107,37 @@ if (!setupRan) {
 }
 
 #region calculate how may characters to draw of our current page
-if (numberOfCharactersToDraw < textLength[currentPage]) {
-    numberOfCharactersToDraw += textSpeed;
-    // prevent overflow for faster typing speeds
-    numberOfCharactersToDraw = clamp(numberOfCharactersToDraw, 0, textLength[currentPage]);
+if(textPauseTimer <= 0){
+	if (numberOfCharactersToDraw < textLength[currentPage]) {
+	    numberOfCharactersToDraw += textSpeed;
+	    // prevent overflow for faster typing speeds
+	    numberOfCharactersToDraw = clamp(numberOfCharactersToDraw, 0, textLength[currentPage]);
+		var checkChar = string_char_at(npcTextArrayInOrder[currentPage], numberOfCharactersToDraw);
+		if(checkChar == "." || checkChar == "," || checkChar == "!" || checkChar == "?"){
+			textPauseTimer = textPauseTime;
+		}
+		/* 
+			There's no reason for this to be inside if the textPauseTimer check with our implementation.
+			However, if you started with a pause, I could see it being necessary, so I left it here.
+			Also, if you wanted to have punctuation do a special sound effect, then you'd want to change this to an else if.
+		*/
+		if(sound[currentPage] != -1){
+			if(soundCount < soundDelay){
+				soundCount++;
+			}else{
+				soundCount = 0;
+				currentlyPlayingSound = audio_play_sound(sound[currentPage], 8, false);
+			}
+		}
+	}
+}else{
+	textPauseTimer--;	
+}
+var stopAudioIfTypingDone = numberOfCharactersToDraw >= textLength[currentPage] && currentlyPlayingSound != -1;
+if(stopAudioIfTypingDone){
+	audio_stop_sound(currentlyPlayingSound);
+	soundCount = soundDelay;
+	currentlyPlayingSound = -1;
 }
 #endregion
 
@@ -120,10 +160,12 @@ if (acceptKey) {
 #endregion
 
 #region base textbox positioning configuration, influences both options and dialog
-textBackgroundSpriteWidth = sprite_get_width(textBackgroundSprite);
-textBackgroundSpriteHeight = sprite_get_height(textBackgroundSprite);
+draw_set_color(fontColor[currentPage]);
+textBackgroundSpriteWidth = sprite_get_width(textBackgroundSprite[currentPage]);
+textBackgroundSpriteHeight = sprite_get_height(textBackgroundSprite[currentPage]);
 var textboxXPosition = textboxX + textXOffset[currentPage];
 var textboxYPosition = textboxY;
+textBackgroundImage += textBackgroundImageSpeed;
 #endregion
 
 #region display options
@@ -141,7 +183,7 @@ if (totalNumberOfOptions > 0) { // short circuit to save some operations potenti
             var optionsYPosition = textboxYPosition - (optionSpacing * totalNumberOfOptions) + (optionSpacing * currentOption);
             var optionWidth = string_width(availableOptions[currentOption]) + (optionBorder * 2);
             // optionSpacing-3 gives you a little bit of breather between the options and is a good place to adjust if you don't like my spacing.
-            draw_sprite_ext(textBackgroundSprite, 0, optionsXPosition, optionsYPosition, optionWidth / textBackgroundSpriteWidth, (optionSpacing - 3) / textBackgroundSpriteHeight, 0, c_white, 1);
+            draw_sprite_ext(textBackgroundSprite[currentPage], textBackgroundImage, optionsXPosition, optionsYPosition, optionWidth / textBackgroundSpriteWidth, (optionSpacing - 3) / textBackgroundSpriteHeight, 0, c_white, 1);
 
             if (currentlySelectedOption == currentOption) {
                 /*
@@ -151,7 +193,7 @@ if (totalNumberOfOptions > 0) { // short circuit to save some operations potenti
                 	That would come in handy if you used different fonts for different conversations. Don't forget to adjust optionMarginToRenderCarat in the create method to give yourself adequate space.
                 	You could also potentially figure that out dynamically if you have different-sized fonts.
                 */
-                draw_sprite(sprTextboxArrow, 0, textboxXPosition, optionsYPosition);
+                draw_sprite(sprTextboxArrow, textBackgroundImage, textboxXPosition, optionsYPosition);
             }
             draw_text(optionsXPosition + optionBorder, optionsYPosition + floor(border / 2), availableOptions[currentOption]);
         }
@@ -162,8 +204,24 @@ if (totalNumberOfOptions > 0) { // short circuit to save some operations potenti
 #region display the dialog text
 // There is no point in drawing something if we have nothing to draw.
 if (totalNumberOfPages > 0) {
+	#region draw the speaker
+	if(speakerSprite[currentPage] != noone){
+		sprite_index = speakerSprite[currentPage];
+		var isDoneRenderingCurrentPage = numberOfCharactersToDraw == textLength;
+		if(isDoneRenderingCurrentPage){
+			image_index = 0; // stop animating the speaker, if your speaker is animated. Mine isn't.
+		}
+		var speakerXPosition = textboxX + portraitXOffset[currentPage];
+		if(speakerSide[currentPage]==speakerLocation.onTheRight){
+			// Done to account for flipping the sprite.
+			speakerXPosition += sprite_width;
+		}
+		draw_sprite_ext(textBackgroundSprite[currentPage], textBackgroundImage, textboxX + portraitXOffset[currentPage], textboxY, sprite_width / textBackgroundSpriteWidth, sprite_height / textBackgroundSpriteHeight, 0 , c_white, 1);
+		draw_sprite_ext(sprite_index, image_index, speakerXPosition, textboxY, speakerSide[currentPage], 1, 0, c_white, 1);
+	}
+	#endregion
     #region draw the background of the textbox
-    draw_sprite_ext(textBackgroundSprite, 0, textboxXPosition, textboxYPosition, textboxWidth / textBackgroundSpriteWidth, textboxHeight / textBackgroundSpriteHeight, 0, c_white, 1);
+    draw_sprite_ext(textBackgroundSprite[currentPage], textBackgroundImage, textboxXPosition, textboxYPosition, textboxWidth / textBackgroundSpriteWidth, textboxHeight / textBackgroundSpriteHeight, 0, c_white, 1);
     #endregion
 
     #region draw the dialog on the background
