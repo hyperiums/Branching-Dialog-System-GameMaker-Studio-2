@@ -8,7 +8,7 @@ enum conversationPoints {
 function scrGameText(textId = "") {
     switch (textId) {
 		// Doing the alternativeStartPage option by manually tying the option to the currentPage is brittle, but it works.
-		// If you change the text order, the number would need to change.
+		// If you change the text order, the number would need to change. Counting starts at 0.
         case conversationPoints.npc1:
 			populateSpeakerText("Hi! I'm Blue Kid! I have important things to say.", characters.greyKid);
 			setSpeakerTextColor(8, 15, c_blue, c_aqua, c_white, c_green);
@@ -26,14 +26,14 @@ function scrGameText(textId = "") {
             break;
         case conversationPoints.npc1Yes:
             populateSpeakerText("Me Too! My latest favorite is by this cool new developer. The title Hopeless is a bit odd though.", characters.greyKidHappy);
-            populateSpeakerText("Can we just start here? That would be so cool.", characters.greyKidHappy);
+            populateSpeakerText("Can we just start here? That would be so cool. Video games are the best!", characters.greyKidHappy);
             break;
         case conversationPoints.npc1No:
             populateSpeakerText("bye felicia!");
             break;
         case conversationPoints.npc2:
-            populateSpeakerText("H! I'm NPC 2. I have odd, punctionation, because! I. see ... things?");
-            populateSpeakerText("H! I'm NPC 2 stillsies");
+            populateSpeakerText("Hi! I'm NPC 2. I have odd, punctionation, because! I. see ... things?");
+            populateSpeakerText("Hi! I'm NPC 2 stillsies");
             break;
         case conversationPoints.npc3:
             populateSpeakerText("H! I'm NPC 3");
