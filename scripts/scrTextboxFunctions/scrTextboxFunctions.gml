@@ -39,7 +39,7 @@ function scrSetDefaultsForText(){
 	#endregion
 	
 	fontColor[currentPage] = c_black;
-	
+	totalNumberOfOptions[currentPage] = 0;
 	sound[currentPage] = -1;
 }
 
@@ -110,22 +110,26 @@ function populateSpeakerText(text, character = noone, side = undefined) {
     currentPage++;
 }
 
-function addSpeakerOptions(optionText, linkId) {
+function addSpeakerOptions(optionText, linkId, alternativeStartPage = -1) {
     if (is_undefined(availableOptions) || is_undefined(totalNumberOfOptions) || is_undefined(optionLinkId)) {
         show_debug_message("We expect to have an array of options (availableOptions), where they should send the dialog to (optionLinkId), and a running count of our speaker's options (totalNumberOfOptions).");
     }
     // we're cheating a bit by using our current total to keep adding options
-    availableOptions[totalNumberOfOptions] = optionText;
-    optionLinkId[totalNumberOfOptions] = linkId;
-    totalNumberOfOptions++;
+    availableOptions[currentPage-1][totalNumberOfOptions[currentPage-1]] = optionText;
+    optionLinkId[currentPage-1][totalNumberOfOptions[currentPage-1]] = linkId;
+	optionLinkIdStartPage[currentPage-1][totalNumberOfOptions[currentPage-1]] = alternativeStartPage;
+    totalNumberOfOptions[currentPage-1]++;
 }
 
-function populateAndStartConversationById(textId) {
+function populateAndStartConversationById(textId, alternativeStartPage = -1) {
     if (is_undefined(objTextbox)) {
         show_debug_message("Without a textbox object, most of this code won't work. objTextbox is where most of our actual work takes place.");
     }
     with(instance_create_depth(0, 0, -100000, objTextbox)) {
         scrGameText(textId);
+		if(alternativeStartPage >= 0){
+			optionalStartPage = alternativeStartPage;
+		}
     }
 }
 

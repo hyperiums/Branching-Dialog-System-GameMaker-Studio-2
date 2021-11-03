@@ -1,5 +1,8 @@
 // making sure setupRan allows us to avoid auto scrolling a new page of text when someone comes here from a dialog choice if the space key is still technically pressed.
-acceptKey = setupRan && keyboard_check_pressed(vk_space);
+acceptKey = setupRan && keyboard_check_pressed(vk_space) && acceptKeyTimer <= 0;
+if(acceptKey){
+	acceptKeyTimer = acceptKeyTimerDelay;	
+}
 
 textboxX = camera_get_view_x(view_camera[0]);
 textboxY = camera_get_view_y(view_camera[0]) + preferredSpaceFromTopOfCamera;
@@ -102,7 +105,10 @@ if (!setupRan) {
 		#endregion
     }
 	
-    currentPage = 0;
+	currentPage = 0;
+	if(optionalStartPage >= 0){
+		currentPage = optionalStartPage;
+	}
     setupRan = true;
 }
 
@@ -141,18 +147,21 @@ if(stopAudioIfTypingDone){
 }
 #endregion
 
-#region flip through pages
+var isPageFullyRendered = numberOfCharactersToDraw == textLength[currentPage];
+#region flip through pages and select option
 if (acceptKey) {
-    if (numberOfCharactersToDraw == textLength[currentPage]) {
-        if (currentPage < totalNumberOfPages - 1) {
+    if (isPageFullyRendered) {
+        if (currentPage < totalNumberOfPages - 1 && totalNumberOfOptions[currentPage] < 1) {
             currentPage++;
             numberOfCharactersToDraw = 0;
-        } else {
+			isPageFullyRendered = false; // prevents prematurely drawing the options when switching to a new page.
+        } else if(totalNumberOfOptions[currentPage] > 0) {
+			// done as an else if to prevent switching pages and jumping to the first option result.
 			instance_destroy();
-            if (totalNumberOfOptions > 0) {
-                populateAndStartConversationById(optionLinkId[currentlySelectedOption]);
-            }
-        }
+            populateAndStartConversationById(optionLinkId[currentPage][currentlySelectedOption], optionLinkIdStartPage[currentPage][currentlySelectedOption]);
+        }else{
+			instance_destroy();
+		}
     } else {
         numberOfCharactersToDraw = textLength[currentPage];
     }
@@ -169,19 +178,17 @@ textBackgroundImage += textBackgroundImageSpeed;
 #endregion
 
 #region display options
-if (totalNumberOfOptions > 0) { // short circuit to save some operations potentially	
+if (totalNumberOfOptions[currentPage] > 0) { // short circuit to save some operations potentially	
     currentlySelectedOption += keyboard_check_pressed(vk_down) - keyboard_check_pressed(vk_up);
     // If you would like, this is where you could put in logic to wrap around your options versus keeping them from moving past the top or bottom.
-    currentlySelectedOption = clamp(currentlySelectedOption, 0, totalNumberOfOptions - 1);
+    currentlySelectedOption = clamp(currentlySelectedOption, 0, totalNumberOfOptions[currentPage] - 1);
 
-    var isOnFinalPage = currentPage == totalNumberOfPages - 1;
-    var isFinalPageFullyRendered = numberOfCharactersToDraw == textLength[currentPage];
-    if (isFinalPageFullyRendered && isOnFinalPage) {
+    if (isPageFullyRendered) {
         var optionsXPosition = textboxXPosition + optionMarginToRenderCarat;
 
-        for (var currentOption = 0; currentOption < totalNumberOfOptions; currentOption++) {
-            var optionsYPosition = textboxYPosition - (optionSpacing * totalNumberOfOptions) + (optionSpacing * currentOption);
-            var optionWidth = string_width(availableOptions[currentOption]) + (optionBorder * 2);
+        for (var currentOption = 0; currentOption < totalNumberOfOptions[currentPage]; currentOption++) {
+            var optionsYPosition = textboxYPosition - (optionSpacing * totalNumberOfOptions[currentPage]) + (optionSpacing * currentOption);
+            var optionWidth = string_width(availableOptions[currentPage][currentOption]) + (optionBorder * 2);
             // optionSpacing-3 gives you a little bit of breather between the options and is a good place to adjust if you don't like my spacing.
             draw_sprite_ext(textBackgroundSprite[currentPage], textBackgroundImage, optionsXPosition, optionsYPosition, optionWidth / textBackgroundSpriteWidth, (optionSpacing - 3) / textBackgroundSpriteHeight, 0, c_white, 1);
 
@@ -195,7 +202,7 @@ if (totalNumberOfOptions > 0) { // short circuit to save some operations potenti
                 */
                 draw_sprite(sprTextboxArrow, textBackgroundImage, textboxXPosition, optionsYPosition);
             }
-            draw_text(optionsXPosition + optionBorder, optionsYPosition + floor(border / 2), availableOptions[currentOption]);
+            draw_text(optionsXPosition + optionBorder, optionsYPosition + floor(border / 2), availableOptions[currentPage][currentOption]);
         }
     }
 }
@@ -256,3 +263,4 @@ if (totalNumberOfPages > 0) {
 	#endregion
 }
 #endregion
+acceptKeyTimer--;

@@ -15,6 +15,8 @@ maximumLineWidth = textboxWidth - (border * 2);
 textBackgroundSprite[0] = sprTextbox;
 textBackgroundImage = 0;
 textBackgroundImageSpeed = 6/60;
+acceptKeyTimerDelay = 10;
+acceptKeyTimer = acceptKeyTimerDelay;
 #endregion
 
 #region option display configuration
@@ -27,6 +29,7 @@ optionMarginToRenderCarat = 35;
 npcTextArrayInOrder = array_create(0);
 textLength = array_create(1, undefined);
 currentPage = 0;
+optionalStartPage = -1;
 totalNumberOfPages = 0;
 numberOfCharactersToDraw = 0;
 textSpeed = 1;
@@ -39,10 +42,11 @@ characterYCoords[0][0] = 0; // character, page
 #endregion
 
 #region options
-availableOptions[0] = "";
-optionLinkId[0] = -1;
+availableOptions[0][0] = "";
+optionLinkIdStartPage[0][0] = -1;
+optionLinkId[0][0] = -1;
 currentlySelectedOption = 0;
-totalNumberOfOptions = 0;
+totalNumberOfOptions[0] = 0;
 #endregion
 
 setupRan = false;

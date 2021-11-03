@@ -1,1 +1,1 @@
-textId="npc 1";
+textId = conversationPoints.npc1;
